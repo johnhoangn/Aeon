@@ -99,7 +99,7 @@ function getRoster(pId)
 end
 
 function teleportParty(roster)
-	local ver = 3;
+	local ver = 6;
 	-- Tell the server that these players are teleporting; do not set their party value to 0
 	for _, playerId in ipairs(roster) do
 		local teleported = Instance.new("BoolValue");
@@ -117,18 +117,19 @@ function teleportParty(roster)
 					rmd.LocalWarning:FireClient(player, "Teleporting in 5 seconds" .. " VERSION: " .. ver);
 					wait(5);
 					for attempt = 1, 5 do
-						local success, errorMsg, targetPlaceId, instanceId = tp:GetPlayerPlaceInstanceAsync(roster[i])
-						print(targetPlaceId .. " | " .. placeId);
-					    if (targetPlaceId == placeId) then
+						local b, errorMsg, leaderPlaceId, instanceId;
+						local s, msg = pcall(function() b, errorMsg, leaderPlaceId, instanceId = tp:GetPlayerPlaceInstanceAsync(roster[1]) end)
+					    if (s and tonumber(leaderPlaceId) == tonumber(placeId)) then
 					        tp:TeleportToPlaceInstance(placeId, instanceId, player, destination);
 							break;
 					    else
-							rmd.LocalWarning:FireClient(player, "Leader hasn't loaded yet; trying again in 5 seconds");
+							if (attempt == 5) then
+								rmd.LocalWarning:FireClient(player, "Teleport aborted; leader possibly closed his/her game");
+								break;
+							else
+								rmd.LocalWarning:FireClient(player, "Leader hasn't loaded yet; trying again in 5 seconds (" .. attempt .. "/5)");
+							end
 					    end
-						if (attempt == 5) then
-							rmd.LocalWarning:FireClient(player, "Teleport aborted; leader possibly closed his/her game");
-							break;
-						end
 						wait(5);
 					end
 				end)();
