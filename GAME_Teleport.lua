@@ -99,6 +99,7 @@ function getRoster(pId)
 end
 
 function teleportParty(roster)
+	local ver = 3;
 	-- Tell the server that these players are teleporting; do not set their party value to 0
 	for _, playerId in ipairs(roster) do
 		local teleported = Instance.new("BoolValue");
@@ -106,9 +107,32 @@ function teleportParty(roster)
 		teleported.Parent = workspace.ServerDomain.PlayersTeleported;
 	end
 	if (not isPrivate) then
-		for _, playerId in ipairs(roster) do
+		-- Teleport the host then make the members follow
+		for i, playerId in ipairs(roster) do
 			local player = game.Players:GetPlayerByUserId(playerId)
-			tp:TeleportToSpawnByName(placeId, destination, player);
+			if (i == 1) then
+				tp:TeleportToSpawnByName(placeId, destination, player);
+			else
+				coroutine.wrap(function()
+					rmd.LocalWarning:FireClient(player, "Teleporting in 5 seconds" .. " VERSION: " .. ver);
+					wait(5);
+					for attempt = 1, 5 do
+						local success, errorMsg, targetPlaceId, instanceId = tp:GetPlayerPlaceInstanceAsync(roster[i])
+						print(targetPlaceId .. " | " .. placeId);
+					    if (targetPlaceId == placeId) then
+					        tp:TeleportToPlaceInstance(placeId, instanceId, player, destination);
+							break;
+					    else
+							rmd.LocalWarning:FireClient(player, "Leader hasn't loaded yet; trying again in 5 seconds");
+					    end
+						if (attempt == 5) then
+							rmd.LocalWarning:FireClient(player, "Teleport aborted; leader possibly closed his/her game");
+							break;
+						end
+						wait(5);
+					end
+				end)();
+			end
 		end
 	else
 		local reserveCode = tp:ReserveServer(placeId);

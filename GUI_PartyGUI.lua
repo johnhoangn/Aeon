@@ -333,7 +333,7 @@ function drawInvite(senderId)
 end
 
 function drawTeleportPrompt()
-	pRequest.Trim.Label.Text = "Host requested a teleport"
+	pRequest.Trim.Label.Text = "Leader requested a teleport"
 	pRequest.Visible = true
 	wait(27)
 	pRequest.Visible = false
@@ -362,6 +362,8 @@ player.PlayerScripts:WaitForChild("Events").PartyIO.Event:connect(function(reque
 		end
 		yield = true
 		listener = pRequest.Answer.Event:connect(function(ans)
+			yield = false
+			yieldControl = false;
 			if ans == true then
 				local pId = sDomain.SaveHub[sender.."s Save"].Party.Value
 				if pId <= 0 then -- If inviter is not in party, make new party with sender as host
@@ -385,7 +387,6 @@ player.PlayerScripts:WaitForChild("Events").PartyIO.Event:connect(function(reque
 				checkExisting(pId)
 			end
 			rmd.RemoteHttp:InvokeServer("deleteInvite",player.userId)
-			yield = false
 			listener:Disconnect()
 		end)
 		drawInvite(sender)
