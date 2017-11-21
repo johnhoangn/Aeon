@@ -99,6 +99,12 @@ function getRoster(pId)
 end
 
 function teleportParty(roster)
+	-- Tell the server that these players are teleporting; do not set their party value to 0
+	for _, playerId in ipairs(roster) do
+		local teleported = Instance.new("BoolValue");
+		teleported.Name = playerId;
+		teleported.Parent = workspace.ServerDomain.PlayersTeleported;
+	end
 	if (not isPrivate) then
 		for _, playerId in ipairs(roster) do
 			local player = game.Players:GetPlayerByUserId(playerId)
@@ -106,6 +112,7 @@ function teleportParty(roster)
 		end
 	else
 		local reserveCode = tp:ReserveServer(placeId);
+		-- Apparently this works with an array of userIds ???
 		tp:TeleportToPrivateServer(placeId, reserveCode, roster, destination);
 	end
 end
