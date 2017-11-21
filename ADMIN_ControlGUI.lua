@@ -2,6 +2,7 @@ if (game.Players.LocalPlayer.Name ~= "Dynamese") then
 	script.Parent:Destroy();
 end
 
+local rmd = game.ReplicatedStorage:WaitForChild("RemoteDump");
 local bin = script.Parent;
 local pList = bin:WaitForChild("PlayerList");
 local pInfo = bin:WaitForChild("PlayerInfo");
@@ -33,9 +34,27 @@ function bindTracker(pLabel, stat)
 	return tracker;
 end
 
+function bindEditor(pLabel, stat)
+	local tracker = nil;
+	tracker = pLabel.FocusLost:connect(function()
+		if (stat.ClassName == "IntValue") then
+			local val = tonumber(pLabel.Text);
+			if (val ~= nil) then
+				rmd.RemoteValue:FireServer(stat, val);
+				print("HELLO??");
+			else
+				pLabel.Text = stat.Name .. ": " .. stat.Value;
+			end
+		else
+			rmd.RemoteValue:FireServer(stat, pLabel.Text);
+		end	
+	end)
+	return tracker;
+end
+
 function playersUpToDate()
 	for _, guy in ipairs(curPlayers) do
-		if (guy == nil) then
+		if (game.Players:FindFirstChild(guy) == nil) then
 			return false;
 		end
 	end
@@ -80,10 +99,12 @@ function startTracking()
 			local pLabel = property:Clone();
 			pLabel.Name = guy.Name;
 			local tracker = bindTracker(pLabel, workspace.ServerDomain.SaveHub[guy.userId .. "s Save"][stat]);
+			local editor = bindEditor(pLabel, workspace.ServerDomain.SaveHub[guy.userId .. "s Save"][stat]);
 			if (listeners[guy.Name] == nil) then
 				listeners[guy.Name] = {};
 			end
 			table.insert(listeners[guy.Name], tracker);
+			table.insert(listeners[guy.Name], editor);
 			pLabel.Position = pLabel.Position + UDim2.new(0, 0, 0, 12 * #guyButton:GetChildren());
 			pLabel.Visible = false;
 			pLabel.Parent = guyButton;
@@ -99,6 +120,7 @@ function startTracking()
 		end)
 		
 		guyButton.Name = guy.Name;
+		guyButton.Text = guy.Name;
 		guyButton.Position = guyButton.Position + UDim2.new(0, 0, 0, 30 * #pList:GetChildren());
 		guyButton.Parent = pList;
 	end
