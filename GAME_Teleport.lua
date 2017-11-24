@@ -71,7 +71,11 @@ end
 function partyInRange(hostPlayer, roster)
 	for _, id in ipairs(roster) do
 		local player = game.Players:GetPlayerByUserId(id);
-		if (hostPlayer:DistanceFromCharacter(player.Character.Torso.Position) > teleportRange) then
+		if (player ~= nil) then
+			if (hostPlayer:DistanceFromCharacter(player.Character.Torso.Position) > teleportRange) then
+				return false;
+			end
+		else
 			return false;
 		end
 	end
