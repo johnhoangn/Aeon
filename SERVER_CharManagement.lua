@@ -35,7 +35,7 @@ end
 
 game.Players.PlayerRemoving:connect(function(player)
 	local name = player.Name;
-	local prechecked, index = check(name);
+	local checked, index = check(name);
 	table.remove(prechecked, index);
 end)
 
