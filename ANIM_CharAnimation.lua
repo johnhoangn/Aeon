@@ -275,7 +275,7 @@ function playAnimation(animName, transitionTime, humanoid)
 		currentAnimKeyframeHandler = currentAnimTrack.KeyframeReached:connect(keyFrameReachedFunc)
 		currentAnimTrack:Play(transitionTime)
 		
-		moveType()
+		setAnimationSpeed(sprinting.Value == true and 24.7 / 12 or 13 / 12)
 	end
 end
 
