@@ -139,31 +139,43 @@ function saveData(UserId)
 		s.Silver = save.Silver.Value
 		s.Diamonds = save.Diamonds.Value
 		s.Bank = save.Bank.Value
-		local teleported = workspace.ServerDomain.PlayersTeleported:FindFirstChild(UserId)
-		if (teleported) then
-			-- If the player teleported, keep party data
-			s.Party = save.Party.Value
-			teleported:Destroy()
-		else
-			-- Manual exit, assume left the party
-			local rosterString = http:PostAsync(database,"op=getParty&id=" .. save.Party.Value,2);
-			local rosterTable = {};
-			for id in string.gmatch(rosterString,"%[%w*%]") do
-				local userId = string.sub(id,2,string.len(id)-1);
-				table.insert(rosterTable,userId);
-			end
-			-- Disband if only two members
-			if #rosterTable > 2 then
-				removePlayerData(UserId, rosterString, save.Party.Value);
-				local leaderId = tonumber(rosterTable[1]);
-				-- What if quitter was leader?
-				if leaderId == UserId then
-					promote(rosterString, rosterTable[math.random(1,#rosterTable)], save.Party.Value);
-				end
+		if (save.Party.Value ~= 0) then
+			local teleported = workspace.ServerDomain.PlayersTeleported:FindFirstChild(UserId)
+			print(teleported)
+			if (teleported ~= nil) then
+				-- If the player teleported, keep party data
+				s.Party = save.Party.Value
+				teleported:Destroy()
+				print("keep pid")
 			else
-				http:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. password, 2);
+				-- Manual exit, assume left the party
+				local rosterString = http:PostAsync(database,"op=getParty&id=" .. save.Party.Value,2);
+				local rosterTable = {};
+				for id in string.gmatch(rosterString,"%[%w*%]") do
+					local userId = string.sub(id,2,string.len(id)-1);
+					table.insert(rosterTable,userId);
+				end
+				-- Disband if only two members
+				if #rosterTable > 2 then
+					removePlayerData(UserId, rosterString, save.Party.Value);
+					local leaderId = tonumber(rosterTable[1]);
+					-- What if quitter was leader?
+					if leaderId == UserId then
+						promote(rosterString, rosterTable[math.random(1,#rosterTable)], save.Party.Value);
+					end
+				else
+					for _, player in ipairs(game.Players:GetChildren()) do
+						local save = workspace.ServerDomain.SaveHub[player.userId.."s Save"]
+						if save.Party.Value == save.Party.Value then
+							save.Party.Value = 0
+						end
+						rmd.LocalEvent:FireClient(player,"PartyIO","updateGUI")
+					end
+					http:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. password, 2);
+				end
+				s.Party = 0;
+				print("erase pid" .. rosterString)
 			end
-			s.Party = 0;
 		end
 		s.Title = {save.Title.Value,save.Title.Titles.Value}
 		local encoded = translator:JSONEncode(s)
@@ -172,6 +184,7 @@ function saveData(UserId)
 			local echo = translator:PostAsync("http://aeondatastore.orgfree.com/","operation=uploadPlayerSave" .. "&userId=" .. tostring(UserId) .. "&save=" .. encoded, 2)
 		end]]
 		--print('Encoded: ' .. encoded)
+		save:Destroy();
 	end
 end
 
@@ -204,25 +217,28 @@ function loadData(player)
 	success, msg = pcall(function() save.Diamonds.Value = decoded.Diamonds end)
 	success, msg = pcall(function() save.Silver.Value = decoded.Silver end)
 	success, msg = pcall(function() save.Level.Exp.Value = decoded.Level[2] end)
-	
-	local rosterString = http:PostAsync(database,"op=getParty&id=" .. decoded.Party, 2);
-	local rosterTable = {};
-	for id in string.gmatch(rosterString,"%[%w*%]") do
-		local userId = string.sub(id,2,string.len(id)-1);
-		table.insert(rosterTable,userId);
+	if (decoded.Party ~= nil and decoded.Party > 0) then
+		local rosterString = http:PostAsync(database,"op=getParty&id=" .. decoded.Party, 2);
+		local rosterTable = {};
+		for id in string.gmatch(rosterString,"%[%w*%]") do
+			local userId = string.sub(id,2,string.len(id)-1);
+			table.insert(rosterTable,userId);
+		end
+		-- Oh no my friends left me, fix my party value pls
+		if #rosterTable >= 2 then
+			print("loaded with party" .. rosterString)
+			success, msg = pcall(function() save.Party.Value = decoded.Party end)
+		else
+			print("loaded no party" .. rosterString)
+			http:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. password, 2);
+			success, msg = pcall(function() save.Party.Value = 0 end)
+		end
 	end
-	-- Oh no my friends left me, fix my party value pls
-	if #rosterTable >= 2 then
-		success, msg = pcall(function() save.Party.Value = decoded.Party end)
-	else
-		success, msg = pcall(function() save.Party.Value = 0 end)
-	end
-	
 	pcall(function() save.Title.Value = decoded.Title[1] end)
 	pcall(function() save.Title.Titles.Value = decoded.Title[2] end)	
 	
 	if msg ~= nil then
-		rmd.LocalServerNotification:FireClient(player,'YOUR SAVE DATA WAS CORRUPTED NEW SAVE WILL NOT BE RECORDED, PLEASE INFORM THE DEVELOPER OF THIS ERROR:')
+		rmd.LocalServerNotification:FireClient(player,'YOUR SAVE DATA WAS CORRUPTED, A NEW SAVE WILL NOT BE RECORDED; PLEASE INFORM THE DEVELOPER OF THIS ERROR:')
 		wait()
 		rmd.LocalServerNotification:FireClient(player,msg)
 	else
@@ -233,15 +249,10 @@ function loadData(player)
 	end
 end
 
-players.ChildRemoved:connect(function(child)
+players.PlayerRemoving:connect(function(child)
 	local tempStr = child.Name
 	local tempId = child.UserId
-	if workspace.ServerDomain.PlayersTeleported:FindFirstChild(tempId) == nil then
-		--wait(300)
-		if players:FindFirstChild(tempStr) == nil then
-			saveData(tempId)
-		end
-	end
+	saveData(tempId)
 end)
 
 players.ChildAdded:connect(function(child)

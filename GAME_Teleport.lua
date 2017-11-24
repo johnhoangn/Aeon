@@ -99,7 +99,7 @@ function getRoster(pId)
 end
 
 function teleportParty(roster)
-	local ver = 6;
+	local ver = 7;
 	-- Tell the server that these players are teleporting; do not set their party value to 0
 	for _, playerId in ipairs(roster) do
 		local teleported = Instance.new("BoolValue");
