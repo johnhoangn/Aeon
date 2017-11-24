@@ -125,6 +125,16 @@ function teleportParty(roster)
 					    else
 							if (attempt == 5) then
 								rmd.LocalWarning:FireClient(player, "Teleport aborted; leader possibly closed his/her game");
+								wait(2)
+								rmd.LocalWarning:FireClient(player, "Party disbanded");
+								local save = workspace.ServerDomain.SaveHub[player.userId.."s Save"]
+								for _, player in ipairs(game.Players:GetChildren()) do
+									if save.Party.Value == save.Party.Value then
+										save.Party.Value = 0
+									end
+									rmd.LocalEvent:FireClient(player,"PartyIO","updateGUI")
+								end
+								hs:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. _G.DB_PASSWORD, 2);
 								break;
 							else
 								rmd.LocalWarning:FireClient(player, "Leader hasn't loaded yet; trying again in 5 seconds (" .. attempt .. "/5)");

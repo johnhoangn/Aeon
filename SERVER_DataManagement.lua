@@ -108,7 +108,7 @@ end
 
 local http = game:GetService("HttpService");
 local database = "https://kickedbla.000webhostapp.com/";
-local password = "&password=sxfbke1999";
+local password = _G.DB_PASSWORD;
 
 function removePlayerData(targetPlayerId, rosterString, pId)
 	local a, b = string.find(rosterString,"%["..targetPlayerId.."%]");
