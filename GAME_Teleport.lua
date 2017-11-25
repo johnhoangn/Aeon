@@ -71,11 +71,7 @@ end
 function partyInRange(hostPlayer, roster)
 	for _, id in ipairs(roster) do
 		local player = game.Players:GetPlayerByUserId(id);
-		if (player ~= nil) then
-			if (hostPlayer:DistanceFromCharacter(player.Character.Torso.Position) > teleportRange) then
-				return false;
-			end
-		else
+		if (player ~= nil and hostPlayer:DistanceFromCharacter(player.Character.Torso.Position) > teleportRange) then
 			return false;
 		end
 	end
@@ -102,8 +98,7 @@ function getRoster(pId)
 	return rosterTable;
 end
 
-function teleportParty(roster)
-	local ver = 7;
+function teleportParty(hostPlayer, roster)
 	-- Tell the server that these players are teleporting; do not set their party value to 0
 	for _, playerId in ipairs(roster) do
 		local teleported = Instance.new("BoolValue");
@@ -118,7 +113,7 @@ function teleportParty(roster)
 				tp:TeleportToSpawnByName(placeId, destination, player);
 			else
 				coroutine.wrap(function()
-					rmd.LocalWarning:FireClient(player, "Teleporting in 5 seconds" .. " VERSION: " .. ver);
+					rmd.LocalWarning:FireClient(player, "Teleporting in 5 seconds");
 					wait(5);
 					for attempt = 1, 5 do
 						local b, errorMsg, leaderPlaceId, instanceId;
@@ -151,8 +146,13 @@ function teleportParty(roster)
 		end
 	else
 		local reserveCode = tp:ReserveServer(placeId);
-		-- Apparently this works with an array of userIds ???
-		tp:TeleportToPrivateServer(placeId, reserveCode, roster, destination);
+		local playerList = {};
+		for _, id in ipairs(roster) do
+			table.insert(playerList,game.Players:GetPlayerByUserId(id));
+		end
+		hs:PostAsync(database,"op=setAccessCode&id=" .. getSave(hostPlayer).Party.Value .. "&accessCode=" .. reserveCode .. _G.DB_PASSWORD, 2);
+		
+		tp:TeleportToPrivateServer(placeId, reserveCode, playerList, destination);
 	end
 end
 
@@ -193,7 +193,7 @@ function promptParty(hostPlayer, roster)
 	
 	while (timer < teleportTimeout) do
 		if (checkPromptListener(listener) == 1) then
-			teleportParty(roster);
+			teleportParty(hostPlayer, roster);
 			break;
 		elseif (checkPromptListener(listener) == -1) then
 			for _, id in ipairs(roster) do

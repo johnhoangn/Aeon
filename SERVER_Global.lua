@@ -10,6 +10,12 @@ ref = game.ReplicatedStorage.References
 iMethods = require(workspace.ServerDomain.InventoryMethods)
 existingTrades = {}
 
+_G.PUBLIC_PLACES = {
+	[61751692] = "SpawnLocationA",
+}
+_G.PRIVATE_PLACES = {
+	[61751692] = "SpawnLocationA",
+}
 _G.DB_PASSWORD = script.PASS.Value;
 _G.COMBAT_TIMER = 20
 _G.ADMINS = {
@@ -421,6 +427,10 @@ function rHTTP.OnServerInvoke(client,op,val,val2,val3)
 		local roster = hs:PostAsync(database,"op=".. op .. "&id=" .. val,2)
 		--print(roster)
 		return roster
+	elseif op == 'getAccessCode' then
+		local code = hs:PostAsync(database,"op=".. op .. "&id=" .. val,2)
+		--print(roster)
+		return code
 	elseif op == 'updateParty' then
 		for _, player in ipairs(game.Players:GetChildren()) do
 			if workspace.ServerDomain.SaveHub[player.userId.."s Save"].Party.Value == val then
@@ -745,6 +755,14 @@ end)
 --Plays sounds at request of client
 rSound = newrm("RemoteEvent","RemoteSound").OnServerEvent:connect(function(client,obj,snd,base,range,vol)
 	_G.PlaySound(obj,snd,base,range,vol)
+end)
+--Teleports at request of client via server-dealt prompt
+rSound = newrm("RemoteEvent", "RemoteTeleport").OnServerEvent:connect(function(client, placeId, accessCode)
+	if (accessCode == nil) then
+		tpService:TeleportToSpawnByName(placeId, _G.PUBLIC_PLACES[placeId], client);
+	else
+		tpService:TeleportToPrivateServer(placeId, accessCode, {client}, _G.PRIVATE_PLACES[placeId]);
+	end
 end)
 
 finished = Instance.new('BoolValue')

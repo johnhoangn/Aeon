@@ -4,7 +4,7 @@ ref = storage.References
 domain = workspace.ServerDomain
 respawncheck = require(script:WaitForChild('rChecker')).respawncheck
 
-prechecked = {}
+checkedList = {}
 
 function readSave(child)
 	if game.Players:FindFirstChild(child.Name) then
@@ -15,7 +15,7 @@ function readSave(child)
 			if check(child.Name) == false then
 				saveobject:WaitForChild("Saveable")
 				respawncheck(child)
-				table.insert(prechecked,child.Name)
+				table.insert(checkedList,child.Name)
 			end
 		else
 			respawncheck(child)
@@ -35,8 +35,10 @@ end
 
 game.Players.PlayerRemoving:connect(function(player)
 	local name = player.Name;
-	local checked, index = check(name);
-	table.remove(prechecked, index);
+	local preChecked, index = check(name);
+	if (preChecked) then
+		table.remove(checkedList, index);
+	end
 end)
 
 workspace.ChildAdded:connect(function(c)
@@ -44,7 +46,7 @@ workspace.ChildAdded:connect(function(c)
 end)
 
 function check(search)
-	for i, item in pairs(prechecked) do
+	for i, item in pairs(checkedList) do
 		if search == item then
 			return true, i
 		end

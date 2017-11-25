@@ -108,13 +108,12 @@ end
 
 local http = game:GetService("HttpService");
 local database = "https://kickedbla.000webhostapp.com/";
-local password = _G.DB_PASSWORD;
 
 function removePlayerData(targetPlayerId, rosterString, pId)
 	local a, b = string.find(rosterString,"%["..targetPlayerId.."%]");
 	local preTarget = string.sub(rosterString,1,a-1);
 	local postTarget = string.sub(rosterString,b+1);
-	http:PostAsync(database,"op=updateParty&id=" .. pId .. "&roster=" .. preTarget .. postTarget .. password,2);
+	http:PostAsync(database,"op=updateParty&id=" .. pId .. "&roster=" .. preTarget .. postTarget .. _G.DB_PASSWORD,2);
 end
 
 function promote(rosterString, targetPlayerId, pId)
@@ -122,7 +121,7 @@ function promote(rosterString, targetPlayerId, pId)
 	local preTarget = string.sub(rosterString,1,a-1);
 	local postTarget = string.sub(rosterString,b+1);
 	local cut = string.sub(rosterString,a,b);
-	http:PostAsync(database,"op=updateParty&id=" .. pId .. "&roster=" .. cut .. preTarget .. postTarget .. password,2);
+	http:PostAsync(database,"op=updateParty&id=" .. pId .. "&roster=" .. cut .. preTarget .. postTarget .. _G.DB_PASSWORD,2);
 end
 
 function saveData(UserId)
@@ -171,7 +170,7 @@ function saveData(UserId)
 						end
 						rmd.LocalEvent:FireClient(player,"PartyIO","updateGUI")
 					end
-					http:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. password, 2);
+					http:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. _G.DB_PASSWORD, 2);
 				end
 				s.Party = 0;
 				print("erase pid" .. rosterString)
@@ -230,8 +229,12 @@ function loadData(player)
 			success, msg = pcall(function() save.Party.Value = decoded.Party end)
 		else
 			print("loaded no party" .. rosterString)
-			http:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. password, 2);
+			http:PostAsync(database,"op=disbandParty&id=" .. save.Party.Value .. _G.DB_PASSWORD, 2);
 			success, msg = pcall(function() save.Party.Value = 0 end)
+		end
+		
+		if (game.Players:GetPlayerByUserId(rosterTable[1]) == nil) then
+			rmd.LocalEvent:FireClient(player,"PartyIO","followLeader");
 		end
 	end
 	pcall(function() save.Title.Value = decoded.Title[1] end)

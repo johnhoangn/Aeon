@@ -332,8 +332,8 @@ function drawInvite(senderId)
 	pRequest.Visible = false
 end
 
-function drawTeleportPrompt()
-	pRequest.Trim.Label.Text = "Leader requested a teleport"
+function drawYesNoPrompt(msg)
+	pRequest.Trim.Label.Text = msg
 	pRequest.Visible = true
 	wait(27)
 	pRequest.Visible = false
@@ -402,10 +402,10 @@ player.PlayerScripts:WaitForChild("Events").PartyIO.Event:connect(function(reque
 		local yieldControl = true;
 		if pRequest.Visible == true then --Wait for previous prompt to be answered
 			repeat
-				wait(1)
+				wait(1);
 			until pRequest.Visible == false
 		end
-		yield = true
+		yield = true;
 		listener = pRequest.Answer.Event:connect(function(ans)
 			if ans == true then
 				rmd.RemoteValue:FireServer(args, 1);
@@ -413,16 +413,51 @@ player.PlayerScripts:WaitForChild("Events").PartyIO.Event:connect(function(reque
 				rmd.RemoteValue:FireServer(args, -1);
 			end
 			yieldControl = false;
-			yield = false
-			listener:Disconnect()
+			yield = false;
+			listener:Disconnect();
 		end)
-		drawTeleportPrompt();
+		drawYesNoPrompt("Leader prompted teleport");
 		if (yieldControl == true) then
 			yield = false;
-			listener:Disconnect()
+			listener:Disconnect();
+		end
+	elseif request == "followLeader" then
+		local leaderId = rosterTable[1];
+		local placeId = tpService:GetPlayerPlaceInstanceAsync(leaderId);
+		
+		local yieldControl = true;
+		if pRequest.Visible == true then --Wait for previous prompt to be answered
+			repeat
+				wait(1);
+			until pRequest.Visible == false
+		end
+		yield = true;
+		listener = pRequest.Answer.Event:connect(function(ans)
+			if ans == true then
+				if (not isPrivate(placeId)) then
+					rmd.RemoteTeleport(placeId);
+				else
+					local accessCode = rmd.RemoteHttp:InvokeServer("getAccessCode", partyId)
+					rmd.RemoteTeleport(placeId, accessCode);
+				end
+			elseif ans == false then
+				leaveParty();
+			end
+			yieldControl = false;
+			yield = false;
+			listener:Disconnect();
+		end)
+		drawYesNoPrompt("You disconnected; reconnect with leader?");
+		if (yieldControl == true) then
+			yield = false;
+			listener:Disconnect();
 		end
 	end
 end)
+
+function isPrivate(placeId)
+	return false;
+end
 
 game.Players.PlayerAdded:connect(function(p)
 	if sameParty(p.userId) == true then
