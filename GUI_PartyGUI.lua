@@ -204,11 +204,11 @@ end
 function drawGUI() 
 	-- Draws leader, then members and sets up the click events
 	-- First, clear the current GUI
+	for _, member in ipairs(bin.Members:GetChildren()) do
+		member:Destroy()
+	end
 	if save.Party.Value > 0 then
 		clickable = true
-		for _, member in ipairs(bin.Members:GetChildren()) do
-			member:Destroy()
-		end
 		for i, c in ipairs(characterTable) do
 			for _, av in pairs(c) do
 				pcall(function() c.Av.hpTracker:Disconnect() end)
@@ -267,9 +267,17 @@ function drawGUI()
 							clickable = false
 							hideOptions()
 							bar.Member.Visible = true
+							if (not sameInstance(rosterTable[1])) then
+								bar.Member.Rejoin.Visible = true;
+							else
+								bar.Member.Rejoin.Visible = false;
+							end
 						end)
 						bar.Member.Leave.MouseButton1Click:connect(function()
 							leaveParty()
+						end)
+						bar.Member.Rejoin.MouseButton1Click:connect(function()
+							rejoinLeader()
 						end)
 					end
 				end
@@ -314,11 +322,21 @@ function hideGUI()
 	end
 end
 
--- Sends out requests to the rest of the party to teleport (only applicable to leader) 11.18.17
-function teleportRequest()
-	-- Fired when the player touches a portal
-	-- If leader, send requests to the rest of the party granted every member is in range
-	-- If not, ask if s/he wishes to leave the party and go solo into the private dungeon/public zone
+function rejoinLeader()
+	local leaderId = rosterTable[1];
+
+	local b, errorMsg, leaderPlaceId, instanceId;
+	local s, msg = pcall(function() b, errorMsg, leaderPlaceId, instanceId = tpService:GetPlayerPlaceInstanceAsync(leaderId) end)
+	if (s) then
+		if (not isPrivate(leaderPlaceId)) then
+			local spawnLocation = rmd.RemoteHttp:InvokeServer("getSpawnLocation", partyId)
+			rmd.RemoteTeleport(leaderPlaceId, {instance = instanceId, spot = spawnLocation});
+		else
+			local accessCode = rmd.RemoteHttp:InvokeServer("getAccessCode", partyId)
+			local spawnLocation = rmd.RemoteHttp:InvokeServer("getSpawnLocation", partyId)
+			rmd.RemoteTeleport(leaderPlaceId, {code = accessCode, spot = spawnLocation});
+		end
+	end
 end
 
 function drawInvite(senderId)
@@ -421,42 +439,11 @@ player.PlayerScripts:WaitForChild("Events").PartyIO.Event:connect(function(reque
 			yield = false;
 			listener:Disconnect();
 		end
-	elseif request == "followLeader" then
-		local leaderId = rosterTable[1];
-		local placeId = tpService:GetPlayerPlaceInstanceAsync(leaderId);
-		
-		local yieldControl = true;
-		if pRequest.Visible == true then --Wait for previous prompt to be answered
-			repeat
-				wait(1);
-			until pRequest.Visible == false
-		end
-		yield = true;
-		listener = pRequest.Answer.Event:connect(function(ans)
-			if ans == true then
-				if (not isPrivate(placeId)) then
-					rmd.RemoteTeleport(placeId);
-				else
-					local accessCode = rmd.RemoteHttp:InvokeServer("getAccessCode", partyId)
-					rmd.RemoteTeleport(placeId, accessCode);
-				end
-			elseif ans == false then
-				leaveParty();
-			end
-			yieldControl = false;
-			yield = false;
-			listener:Disconnect();
-		end)
-		drawYesNoPrompt("You disconnected; reconnect with leader?");
-		if (yieldControl == true) then
-			yield = false;
-			listener:Disconnect();
-		end
 	end
 end)
 
 function isPrivate(placeId)
-	return false;
+	return rmd.isPrivateZone:InvokeServer(placeId);
 end
 
 game.Players.PlayerAdded:connect(function(p)

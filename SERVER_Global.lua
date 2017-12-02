@@ -11,10 +11,10 @@ iMethods = require(workspace.ServerDomain.InventoryMethods)
 existingTrades = {}
 
 _G.PUBLIC_PLACES = {
-	[61751692] = "SpawnLocationA",
+	213035209,
 }
 _G.PRIVATE_PLACES = {
-	[61751692] = "SpawnLocationA",
+	61751692,
 }
 _G.DB_PASSWORD = script.PASS.Value;
 _G.COMBAT_TIMER = 20
@@ -431,6 +431,10 @@ function rHTTP.OnServerInvoke(client,op,val,val2,val3)
 		local code = hs:PostAsync(database,"op=".. op .. "&id=" .. val,2)
 		--print(roster)
 		return code
+	elseif op == 'getSpawnLocation' then
+		local sL = hs:PostAsync(database,"op=".. op .. "&id=" .. val,2)
+		--print(roster)
+		return sL
 	elseif op == 'updateParty' then
 		for _, player in ipairs(game.Players:GetChildren()) do
 			if workspace.ServerDomain.SaveHub[player.userId.."s Save"].Party.Value == val then
@@ -756,12 +760,21 @@ end)
 rSound = newrm("RemoteEvent","RemoteSound").OnServerEvent:connect(function(client,obj,snd,base,range,vol)
 	_G.PlaySound(obj,snd,base,range,vol)
 end)
+--Yields private or not
+rIsPrivate = newrm("RemoteEvent", "isPrivateZone").OnServerEvent:connect(function(client, placeId)
+	for zone, spawnLocation in ipairs(_G.PRIVATE_PLACES) do
+		if (tonumber(zone) == tonumber(placeId)) then
+			return true;
+		end
+	end
+	return false;
+end)
 --Teleports at request of client via server-dealt prompt
-rSound = newrm("RemoteEvent", "RemoteTeleport").OnServerEvent:connect(function(client, placeId, accessCode)
-	if (accessCode == nil) then
-		tpService:TeleportToSpawnByName(placeId, _G.PUBLIC_PLACES[placeId], client);
+rTeleport = newrm("RemoteEvent", "RemoteTeleport").OnServerEvent:connect(function(client, placeId, args)
+	if (args.accessCode == nil) then
+		tpService:TeleportToSpawnByName(placeId, args.spawnLocation, client);
 	else
-		tpService:TeleportToPrivateServer(placeId, accessCode, {client}, _G.PRIVATE_PLACES[placeId]);
+		tpService:TeleportToPrivateServer(placeId, args.accessCode, {client}, args.spawnLocation);
 	end
 end)
 
