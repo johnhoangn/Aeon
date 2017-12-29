@@ -1,13 +1,16 @@
 
 
-local gContainer, gBackground, gOptionsBackground, gTreeList, gChildList;
+local gContainer, gBackground, gOptionsBackground, gModType; 
+local gTreeList, gChildList, gTriggerList, gReqList;
 local gNodeRoot, gCurNodeDialogue, gDialogueField, gDialogueName;
 local gTextButton, gTextLabel, gTextBox;
 local gNewTree, gExitTree, gDeleteTree, gAddMod;
+local gTriggersButton, gReqsButton;
 local gMakePChat, gMakeNChat, gEditNode, gUpNode, gDeleteNode, gEndBranch;
 local wkspc, trash, curNode;
 
-local mods = {};
+local triggers = {};
+local reqs = {};
 local events = {};
 
 function setUp()
@@ -26,10 +29,10 @@ function setUp()
 	end
 	
 	for _, trigger in ipairs(game.ServerStorage.DialogueTreeKit.chatTriggers:GetChildren()) do
-		mods[trigger.Name] = trigger;
+		triggers[trigger.Name] = trigger;
 	end
 	for _, requirement in ipairs(game.ServerStorage.DialogueTreeKit.required:GetChildren()) do
-		mods[requirement.Name] = requirement;
+		reqs[requirement.Name] = requirement;
 	end
 	
 	local white = Color3.new(1,1,1);	
@@ -48,6 +51,11 @@ function setUp()
 	gOptionsBackground = Instance.new("Frame");
 	drawGui(gOptionsBackground, {0,0,0}, {0,0,0,1}, 0.5, {0, 80, 1, -10}, gBackground);
 	gOptionsBackground.Position = UDim2.new(0, 5, 0, 5);
+	
+	gModType = Instance.new("Frame");
+	drawGui(gModType, {0,0,0}, {0,0,0,1}, 0.5, {0, 80, 0, 55}, gBackground);
+	gModType.Visible = false;
+	gModType.Position = UDim2.new(0, 5, 1, 5);
 	
 	--TEMPLATE TEXT OBJECTS
 	gTextButton = Instance.new("TextButton");
@@ -109,6 +117,20 @@ function setUp()
 	gAddMod.Parent = gOptionsBackground;
 	gAddMod.Position = UDim2.new(0, 5, 0, 80);
 	
+	gTriggersButton = gTextButton:Clone();
+	gTriggersButton.Name = "Triggers";
+	gTriggersButton.Text = "Trigger";
+	gTriggersButton.Parent = gModType;
+	gTriggersButton.Size = UDim2.new(0, 70, 0, 20);
+	gTriggersButton.Position = UDim2.new(0, 5, 0, 5);
+	
+	gReqsButton = gTextButton:Clone();
+	gReqsButton.Name = "Requirements";
+	gReqsButton.Text = "Require";
+	gReqsButton.Parent = gModType;
+	gReqsButton.Size = UDim2.new(0, 70, 0, 20);
+	gReqsButton.Position = UDim2.new(0, 5, 0, 30);
+	
 	--LISTS
 	gTreeList = Instance.new("ScrollingFrame");
 	gTreeList.Name = "TreeList";
@@ -123,6 +145,20 @@ function setUp()
 	gChildList.Parent = gBackground;	
 	gChildList.AnchorPoint = Vector2.new(1,0);
 	gChildList.Position = UDim2.new(1, -5, 0 ,5);
+	
+	gTriggerList = gTreeList:Clone();
+	gTriggerList.Name = "TriggerList";
+	gTriggerList.Parent = gBackground;	
+	gTriggerList.AnchorPoint = Vector2.new(1,0);
+	gTriggerList.Position = UDim2.new(0, -5, 0 ,5);
+	gTriggerList.Visible = false;
+	
+	gReqList = gTreeList:Clone();
+	gReqList.Name = "ReqList";
+	gReqList.Parent = gBackground;	
+	gReqList.AnchorPoint = Vector2.new(1,0);
+	gReqList.Position = UDim2.new(0, -5, 0 ,5);
+	gReqList.Visible = false;
 	
 	--MIDDLE FIELDS
 	gCurNodeDialogue = gTextLabel:Clone();
@@ -188,17 +224,17 @@ function setUp()
 	gEndBranch.Text = "End";
 	gEndBranch.Parent = gBackground;
 	gEndBranch.Size = UDim2.new(0, 40, 0, 14);
-	gEndBranch.Position = UDim2.new(0, 430, 0, 95);
+	gEndBranch.Position = UDim2.new(0, 430, 0, 95);	
 	
 	--BUTTON EVENTS
 	gNewTree.MouseButton1Click:connect(function()
 		local name = gDialogueName.Text;
 			local value = gDialogueField.Text;
-			if (name ~= "Enter new name" and value ~= "Enter new dialogue") then
+			if (name ~= "Enter new name/value" and value ~= "Enter new dialogue/value") then
 				curNode = makeNode(name, wkspc, value);
-			elseif (name == "Enter new name") then
+			elseif (name == "Enter new name/value") then
 				curNode = makeNode("pChat", wkspc, value);
-			elseif (value == "Enter new dialogue") then
+			elseif (value == "Enter new dialogue/value") then
 				curNode = makeNode(name, wkspc, "");
 			else
 				curNode = makeNode("pChat", wkspc, "");
@@ -234,11 +270,11 @@ function setUp()
 		if (curNode ~= nil and curNode.Name == "nChat") then
 			local name = gDialogueName.Text;
 			local value = gDialogueField.Text;
-			if (name ~= "Enter new name" and value ~= "Enter new dialogue") then
+			if (name ~= "Enter new name/value" and value ~= "Enter new dialogue/value") then
 				curNode = makeNode(name, curNode, value);
-			elseif (name == "Enter new name") then
+			elseif (name == "Enter new name/value") then
 				curNode = makeNode("pChat", curNode, value);
-			elseif (value == "Enter new dialogue") then
+			elseif (value == "Enter new dialogue/value") then
 				curNode = makeNode(name, curNode, "");
 			else
 				curNode = makeNode("pChat", curNode, "");
@@ -281,11 +317,57 @@ function setUp()
 	
 	gEndBranch.MouseButton1Click:connect(function()
 		if (curNode ~= nil and curNode:FindFirstChild("endChat") == nil) then
-			local ender = mods.endChat:Clone();
+			local ender = triggers.endChat:Clone();
 			ender.Parent = curNode;
 			updateGUI();
 		end
 	end)
+	
+	gAddMod.MouseButton1Click:connect(function()
+		if (curNode ~= nil) then
+			gModType.Visible = not gModType.Visible;
+		end
+	end)
+	
+	gTriggersButton.MouseButton1Click:connect(function()
+		gTriggerList.Visible = true;
+		gModType.Visible = false;
+	end)	
+	
+	gReqsButton.MouseButton1Click:connect(function()
+		gReqList.Visible = true;
+		gModType.Visible = false;
+	end)
+	
+	for key, trigger in pairs(triggers) do
+		local addButton = gTextButton:Clone();
+		addButton.Name = key;
+		addButton.Text = key;
+		addButton.Size = UDim2.new(0, 95, 0, 20);
+		addButton.Position = UDim2.new(0, 5, 0, 5 + 25*#gTriggerList:GetChildren());
+		addButton.Parent = gTriggerList;
+
+		addButton.MouseButton1Click:connect(function()
+			makeModifier(trigger, curNode);
+			gTriggerList.Visible = false;
+			updateGUI();
+		end)
+	end	
+	
+	for key, req in pairs(reqs) do
+		local addButton = gTextButton:Clone();
+		addButton.Name = key;
+		addButton.Text = stringClamp(key, 12);
+		addButton.Size = UDim2.new(0, 95, 0, 20);
+		addButton.Position = UDim2.new(0, 5, 0, 5 + 25*#gReqList:GetChildren());
+		addButton.Parent = gReqList;
+
+		addButton.MouseButton1Click:connect(function()
+			makeModifier(req, curNode);
+			gReqList.Visible = false;
+			updateGUI();
+		end)
+	end	
 	
 	gContainer.Parent = game.Players.LocalPlayer.PlayerGui;		
 	
@@ -308,7 +390,12 @@ function drawGui(gui, a, b, t, s, p)
 end
 
 function isMod(c)
-	for name, _ in pairs(mods) do
+	for name, _ in pairs(triggers) do
+		if (c.Name == name) then
+			return true;
+		end
+	end
+	for name, _ in pairs(reqs) do
 		if (c.Name == name) then
 			return true;
 		end
@@ -340,7 +427,8 @@ function drawChild(src)
 end
 
 function drawModifier(src)
-	local buttonEvent = nil;
+	local buttonEvent1 = nil;
+	local buttonEvent2 = nil;
 	local rootButton = gTextButton:Clone();
 	rootButton.Name = src.Name;
 	rootButton.Text = "<" .. stringClamp(src.Name, 12) .. ">";
@@ -348,12 +436,38 @@ function drawModifier(src)
 	rootButton.Position = UDim2.new(0, 5, 0, 5 + 25*#gChildList:GetChildren());
 	rootButton.Parent = gChildList;
 
-	buttonEvent = rootButton.MouseButton2Click:connect(function()
+	buttonEvent1 = rootButton.MouseButton1Click:connect(function()
+		if (src.ClassName == "BoolValue") then
+			src.Value = gDialogueField.Text == "1" and true or false;
+		elseif (src.ClassName == "IntValue") then
+			src.Value = tonumber(gDialogueField.Text);
+		elseif (src.ClassName == "StringValue") then
+			src.Value = gDialogueField.Text;
+		else
+			print("UNHANDLED TRIGGER/REQUIREMENT");
+		end
+		
+		local kids = src:GetChildren();
+		if (#kids == 1) then
+			if (kids[1].ClassName == "BoolValue") then
+				kids[1].Value = gDialogueName.Text == "1" and true or false;
+			elseif (kids[1].ClassName == "IntValue") then
+				kids[1].Value = tonumber(gDialogueName.Text);
+			elseif (kids[1].ClassName == "StringValue") then
+				kids[1].Value = gDialogueName.Text;
+			else
+				print("UNHANDLED TRIGGER/REQUIREMENT FOR SUB PROPERTY");
+			end
+		end
+	end)	
+
+	buttonEvent2 = rootButton.MouseButton2Click:connect(function()
 		src:Destroy();
 		updateGUI();
 	end)	
 
-	table.insert(events,buttonEvent);	
+	table.insert(events,buttonEvent1);	
+	table.insert(events,buttonEvent2);	
 	
 	gChildList.CanvasSize = UDim2.new(0, 0, 0, 10 + 25*#gChildList:GetChildren());
 end
@@ -375,7 +489,7 @@ function drawNodeChildren(node)
 end
 
 function makeModifier(mod, node)
-	local newMod = mods[mod]:Clone();
+	local newMod = mod:Clone();
 	newMod.Parent = node;
 end
 
@@ -425,8 +539,8 @@ function updateGUI()
 	clearLists();
 	drawTreeList();
 	
-	gDialogueField.Text = "Enter new dialogue";
-	gDialogueName.Text = "Enter new name";
+	gDialogueField.Text = "Enter new dialogue/value";
+	gDialogueName.Text = "Enter new name/value";
 	
 	if (curNode ~= nil) then
 		gCurNodeDialogue.Text = ">> " .. stringClamp(curNode.Value, 30);
