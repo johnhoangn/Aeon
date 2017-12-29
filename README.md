@@ -1,3 +1,3 @@
 # Aeon
-Aeon script backup
-Aeon is a ROBLOX-based game.
+# Aeon script backup.
+# Aeon is a ROBLOX-based game.
