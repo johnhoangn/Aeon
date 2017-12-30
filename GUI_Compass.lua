@@ -57,7 +57,7 @@ end
 
 function clearWPs()
 	for _, v in pairs(bin.Parent.Waypoints:GetChildren()) do
-		if bin.WaypointFolder:FindFirstChild(v.Name) == nil then
+		if bin.WaypointFolder:FindFirstChild(v.Name) == nil or (string.find(v.Name,"QuestMarker") ~= nil and v.Active.Value == false) then
 			v:Destroy()
 		end
 	end
