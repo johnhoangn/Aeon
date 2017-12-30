@@ -57,7 +57,8 @@ end
 
 function clearWPs()
 	for _, v in pairs(bin.Parent.Waypoints:GetChildren()) do
-		if bin.WaypointFolder:FindFirstChild(v.Name) == nil or (string.find(v.Name,"QuestMarker") ~= nil and v.Active.Value == false) then
+		local w = bin.WaypointFolder:FindFirstChild(v.Name)
+		if w == nil or (string.find(w.Name,"QuestMarker") ~= nil and w.Active.Value == false) then
 			v:Destroy()
 		end
 	end
@@ -118,6 +119,7 @@ function waypoint(gui,tVec)
 
 	gui.Position = UDim2.new(0,clamp(deg/180)*width,0.5,0);
 	gui.Size = UDim2.new(0,d,0,d);
+	gui.ImageColor3 = bin.Parent.Parent:WaitForChild("QuestFrame"):WaitForChild(gui.Name):WaitForChild("Frame"):WaitForChild("Img").ImageColor3
 end
 
 r.Stepped:connect(function()
