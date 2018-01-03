@@ -1,4 +1,5 @@
-
+local toolbar = plugin:CreateToolbar("DialogueToolkit")
+local button = toolbar:CreateButton("", "", "rbxassetid://1290051688")
 
 local gContainer, gBackground, gOptionsBackground, gModType; 
 local gTreeList, gChildList, gTriggerList, gReqList;
@@ -9,12 +10,14 @@ local gTriggersButton, gReqsButton;
 local gMakePChat, gMakeNChat, gEditNode, gUpNode, gDeleteNode, gEndBranch;
 local wkspc, trash, curNode;
 
+local core = game:GetService("CoreGui");
+
 local triggers = {};
 local reqs = {};
 local events = {};
 
 function setUp()
-	local existing = workspace:FindFirstChild("DialogueWkspc");
+	local existing = workspace:WaitForChild("DialogueWkspc",30);
 	if (existing ~= nil) then
 		wkspc = existing;
 		trash = workspace.DialogueTrash;
@@ -28,10 +31,10 @@ function setUp()
 		trash.Parent = workspace;
 	end
 	
-	for _, trigger in ipairs(game.ServerStorage.DialogueTreeKit.chatTriggers:GetChildren()) do
+	for _, trigger in ipairs(script.Parent.DialogueTreeKit.chatTriggers:GetChildren()) do
 		triggers[trigger.Name] = trigger;
 	end
-	for _, requirement in ipairs(game.ServerStorage.DialogueTreeKit.required:GetChildren()) do
+	for _, requirement in ipairs(script.Parent.DialogueTreeKit.required:GetChildren()) do
 		reqs[requirement.Name] = requirement;
 	end
 	
@@ -346,6 +349,7 @@ function setUp()
 		addButton.Size = UDim2.new(0, 95, 0, 20);
 		addButton.Position = UDim2.new(0, 5, 0, 5 + 25*#gTriggerList:GetChildren());
 		addButton.Parent = gTriggerList;
+		gTriggerList.CanvasSize = UDim2.new(0, 0, 0, 25*#gTriggerList:GetChildren());
 
 		addButton.MouseButton1Click:connect(function()
 			makeModifier(trigger, curNode);
@@ -361,6 +365,7 @@ function setUp()
 		addButton.Size = UDim2.new(0, 95, 0, 20);
 		addButton.Position = UDim2.new(0, 5, 0, 5 + 25*#gReqList:GetChildren());
 		addButton.Parent = gReqList;
+		gReqList.CanvasSize = UDim2.new(0, 0, 0, 25*#gReqList:GetChildren());
 
 		addButton.MouseButton1Click:connect(function()
 			makeModifier(req, curNode);
@@ -369,7 +374,12 @@ function setUp()
 		end)
 	end	
 	
-	gContainer.Parent = game.Players.LocalPlayer.PlayerGui;		
+	gContainer.Enabled = false;
+	gContainer.Parent = core;
+	
+	button.Click:connect(function()
+		gContainer.Enabled = not gContainer.Enabled;
+	end)	
 	
 	--INITIAL UPDATE
 	updateGUI();
