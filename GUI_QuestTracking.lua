@@ -14,6 +14,13 @@ local cMethods = require(player.PlayerScripts.ClientMethods)
 local quests = {} -- Max six
 local yield = false -- During reOrganize()
 local selectedEntry = "" -- Currently selected journal entry
+local debugging = false
+
+function pBug(msg)
+	if debugging then
+		print(msg)
+	end
+end
 
 function indexOf(questId)
 	-- Linear search, returns index of quest of Integer questId
@@ -160,7 +167,7 @@ function incrementStage(questObject)
 	end
 	updateSave()
 	drawGUI()
-	--print("_qTracker_"..getName(questObject.id) .. " incremented")
+	--pBug("_qTracker_"..getName(questObject.id) .. " incremented")
 end
 
 function readSave()
@@ -408,8 +415,8 @@ function setEvents(questObject)
 	marker.Adornee = nil
 	wp.Active.Value = false
 	-- Oh no, I have to go kill 10,000 more tigers
-	if preQualified == false then
-		print("_qTracking_Player did not prequalify, setting task events for stage "..questObject.stage)
+	if not preQualified then
+		pBug("_qTracking_Player did not prequalify, setting task events for stage "..questObject.stage)
 		for _, task in ipairs(tasks) do
 			if (task.Name == "GoTo") then
 				marker.Adornee = workspace[task.Value].PrimaryPart
@@ -423,7 +430,8 @@ function setEvents(questObject)
 			else
 				local event = bindables[task.Name]
 				local function func(arg)
-					print("_qTracking_"..task.Name.." fired with "..arg.Name)
+					pBug("_qTracking_"..task.Name.." fired with "..arg.Name)
+					wait(1)
 					if arg.Name == task.Value then
 						if task:FindFirstChild("Amount") then
 							if iMethods.haveEnough(task.Value,task.Amount.Value) then
@@ -438,7 +446,7 @@ function setEvents(questObject)
 			end		
 		end
 	else
-		print("_qTracking_Prequalified, incrementing to stage"..questObject.stage+1)
+		pBug("_qTracking_Prequalified, incrementing to stage"..questObject.stage+1)
 		incrementStage(questObject)
 	end
 	--printJournal()
@@ -449,7 +457,7 @@ function bind(questObject,func,event)
 	-- Ex. func = set stage; bound to gather
 	local connection = event.Event:connect(func)
 	table.insert(questObject.events,connection)
-	print("_qTracking_Bound function to " .. event.Name)
+	pBug("_qTracking_Bound function to " .. event.Name)
 end
 
 function unbind(questObject)
@@ -468,12 +476,12 @@ function printQuestDetails(questObject)
 	local eStage = questObject.endStage
 	local numEvents = #questObject.events
 	local tracker = questObject.tracker.Name
-	print("QUEST: [" .. name .. "]")
-	print("_ID: [" .. id .. "]")
-	print("_STAGE: [" .. stage .. "]")
-	print("_ENDSTAGE: [" .. eStage .. "]")
-	print("_EVENTS: " .. tostring(questObject.events) .. " [" .. numEvents .. "]")
-	print("_TRACKER: [" .. tracker .. "]")
+	pBug("QUEST: [" .. name .. "]")
+	pBug("_ID: [" .. id .. "]")
+	pBug("_STAGE: [" .. stage .. "]")
+	pBug("_ENDSTAGE: [" .. eStage .. "]")
+	pBug("_EVENTS: " .. tostring(questObject.events) .. " [" .. numEvents .. "]")
+	pBug("_TRACKER: [" .. tracker .. "]")
 end
 
 function printJournal()
