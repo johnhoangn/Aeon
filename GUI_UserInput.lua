@@ -38,7 +38,6 @@ local tradeMethods = require(playergui.TradeFrame.TradeMethods)
 local checkactor = clientMethods.checkactor
 --
 localcharacter:WaitForChild("GUI").B.Enabled = false
-mouse.Icon = "rbxassetid://208838831"
 localcharacter.Humanoid:SetStateEnabled("Swimming",false)
 --
 local rollAnim = Instance.new("Animation")
@@ -324,24 +323,26 @@ function roll()
 				rollTrack:Play(.1,1,1.2)
 				inventory.Mode.Value = 9
 				local bv = Instance.new("BodyVelocity")
-				bv.MaxForce = Vector3.new(1e9,0,1e9)
-				bv.Parent = pointer
 				local bg = nil
 				local dir = getRollDir()
 				coroutine.wrap(function()
 					pcall(function() rmd.RemoteValue:FireServer(localcharacter.Equip.R:GetChildren()[1].Mode, inventory.Mode.Value) end)
 					bg = rmd.RemoteInstance:InvokeServer("BodyGyro","Invulnerable",pointer)
 					bg.cframe = CFrame.new(pointer.Position,pointer.Position+dir*2)
+					pointer.CFrame = bg.cframe
 					bg.maxTorque = Vector3.new(1e9,1e9,1e9)
 					bg.P = 1e9
 					rmd.RemoteValue:FireServer(AV.Stamina,AV.Stamina.Value - rollCost)
 				end)()
-				bv.Velocity = dir*20
+				bv.Velocity = dir*25 * Vector3.new(1,0,1)
+				bv.MaxForce = Vector3.new(1e9,1e9,1e9)
+				bv.Parent = pointer
 				local hit = nil
 				repeat 
 					if hit == nil and bv ~= nil then
 						hit = workspace:FindPartOnRayWithIgnoreList(Ray.new(pointer.Position+Vector3.new(0,-0.5,0),dir*3),filtertable,false,true)
-						if hit ~= nil then
+						local ground = workspace:FindPartOnRayWithIgnoreList(Ray.new(pointer.Position,Vector3.new(0,-4,0)),filtertable,false,true)
+						if hit ~= nil or ground == nil then
 							bv:Destroy()
 						end
 					end
@@ -463,6 +464,7 @@ input.InputBegan:connect(function(obj,event)
 			inventory.Visible = false
 			playsound("Bag")
 		end	
+		starterGui.lockOverride.Value = not inventory.Visible
 	end
 	--Secondary
 	if inventory.Mode.Value <= 0 and grabbing == nil and processed == false then
@@ -507,13 +509,25 @@ input.InputBegan:connect(function(obj,event)
 				end
 			end
 		elseif obj.KeyCode == Enum.KeyCode.J then
-			if journal.Visible then
-				journal.Visible = false
-				playsound("Click")
-			else
-				journal.Visible = true
-				playsound("Click")
-			end
+			local n = not journal.Visible;
+			journal.Visible = n
+			starterGui.lockOverride.Value = not n
+			playsound("Click")
+		elseif obj.KeyCode == Enum.KeyCode.K then
+			local n = not playergui.Professions.Visible;
+			playergui.Professions.Visible = n
+			starterGui.lockOverride.Value = not n
+			playsound("Click")
+		elseif obj.KeyCode == Enum.KeyCode.C then
+			local n = not playergui.Attributes.Visible;
+			playergui.Attributes.Visible = n
+			starterGui.lockOverride.Value = not n
+			playsound("Click")
+		elseif obj.KeyCode == Enum.KeyCode.H then
+			local n = not playergui.Emotes.Visible;
+			playergui.Emotes.Visible = n
+			starterGui.lockOverride.Value = not n
+			playsound("Click")
 		elseif obj.KeyCode == Enum.KeyCode.F then
 			local function isPlayer(part)
 				for _, p in pairs(game.Players:GetChildren()) do
@@ -703,6 +717,7 @@ input.InputBegan:connect(function(obj,event)
 									playsound("Ching")
 									wait(rmd.RemoteValue:FireServer(save.Silver,save.Silver.Value + item.Value))
 								end
+								localplayer.PlayerScripts.Events.Loot:Fire(item)
 							end
 							lootTarget:Destroy()
 							lootTarget = nil
@@ -738,6 +753,7 @@ input.InputBegan:connect(function(obj,event)
 													item:Destroy()
 													itemGui.Visible = false
 												end
+												localplayer.PlayerScripts.Events.Loot:Fire(item)
 											end)
 											itemGui.Position = UDim2.new(0,0,0,#lootFrame.Loot:GetChildren()*(itemGui.Size.Y.Offset+5))
 											itemGui.Parent = lootFrame.Loot
@@ -791,6 +807,7 @@ input.InputBegan:connect(function(obj,event)
 										playsound("Ching")
 										wait(rmd.RemoteValue:FireServer(save.Silver,save.Silver.Value + item.Value))
 									end
+									localplayer.PlayerScripts.Events.Loot:Fire(item)
 								end
 								listUpdate:disconnect()
 								lootTarget:Destroy()
@@ -1020,15 +1037,6 @@ input.InputEnded:connect(function(obj,event)
 		changestance(1)
 	elseif obj.KeyCode == Enum.KeyCode.Space then
 		localcharacter.Humanoid:SetStateEnabled("Swimming",false)
-	elseif obj.KeyCode == Enum.KeyCode.K then
-		playergui.Professions.Visible = not playergui.Professions.Visible
-		playsound("Click")
-	elseif obj.KeyCode == Enum.KeyCode.C then
-		playergui.Attributes.Visible = not playergui.Attributes.Visible
-		playsound("Click")
-	elseif obj.KeyCode == Enum.KeyCode.H then
-		playergui.Emotes.Visible = not playergui.Emotes.Visible
-		playsound("Click")
 	end
 end)
 
@@ -1122,5 +1130,7 @@ sprinting.Changed:connect(function(val)
 	end
 end)
 ]]
+
+unlockcam()
 
 localcharacter.Humanoid.JumpPower = 0
